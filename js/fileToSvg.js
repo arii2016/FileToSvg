@@ -143,6 +143,13 @@ function svgToSvg(svgString, colorArray)
         setObj[i].remove();
         setObjColor[i].remove();
     }
+    // markerをすべて削除
+    setObj = snapSrc.selectAll("marker");
+    setObjColor = snapSrcColor.selectAll("marker");
+    for (var i = 0; i < setObj.length; i++) {
+        setObj[i].remove();
+        setObjColor[i].remove();
+    }
 
     // すべての要素を操作
     var selectArr = [ "path", "rect", "line", "circle", "ellipse", "polygon", "polyline" ];
@@ -163,6 +170,7 @@ function svgToSvg(svgString, colorArray)
     // 文字列に出力
     retSvgStr = snapDst.toString();
     snapSrc.remove();
+    snapSrcColor.remove();
     snapDst.remove();
 
     return retSvgStr;
