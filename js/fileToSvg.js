@@ -11,6 +11,11 @@ function svgToSvg(svgString, colorArray)
         var matrix;
         var strokeWidth;
 
+        // displayがnoneの場合は追加しない
+        if (objColor.attr("display") == "none") {
+            return;
+        }
+
         // 色を取得、(色以外の場合は、黒にする)
         var stroke = objColor.attr("stroke");
         if (stroke.trim().slice(0, 3) != "rgb") {
@@ -136,6 +141,13 @@ function svgToSvg(svgString, colorArray)
     snapSrc.group().append(Snap.parse(svgString));
     snapSrcColor.group().append(Snap.parse(svgString));
 
+    // defsをすべて削除
+    setObj = snapSrc.selectAll("defs");
+    setObjColor = snapSrcColor.selectAll("defs");
+    for (var i = 0; i < setObj.length; i++) {
+        setObj[i].remove();
+        setObjColor[i].remove();
+    }
     // patternをすべて削除
     setObj = snapSrc.selectAll("pattern");
     setObjColor = snapSrcColor.selectAll("pattern");
@@ -150,6 +162,23 @@ function svgToSvg(svgString, colorArray)
         setObj[i].remove();
         setObjColor[i].remove();
     }
+    // flowRootをすべて削除
+    setObj = snapSrc.selectAll("flowRoot");
+    setObjColor = snapSrcColor.selectAll("flowRoot");
+    for (var i = 0; i < setObj.length; i++) {
+        setObj[i].remove();
+        setObjColor[i].remove();
+    }
+    // グループのdisplayの設定がdisplayの要素を削除する
+    setObj = snapSrc.selectAll("g");
+    setObjColor = snapSrcColor.selectAll("g");
+    for (var i = 0; i < setObj.length; i++) {
+        if (setObjColor[i].attr("display") == "none") {
+            setObj[i].remove();
+            setObjColor[i].remove();
+        }
+    }
+
 
     // すべての要素を操作
     var selectArr = [ "path", "rect", "line", "circle", "ellipse", "polygon", "polyline" ];
