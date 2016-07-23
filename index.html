@@ -1,0 +1,143 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+    <title>FILE→SVG</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./js/psd.min.js"></script>
+    <script type="text/javascript" src="./js/snap.svg-min.js"></script>
+    <script type="text/javascript" src="./js/fabric.min.js"></script>
+    <script type="text/javascript" src="./js/fileToSvg.js"></script>
+
+    <script type="text/javascript">
+
+        window.addEventListener("DOMContentLoaded", function(){
+
+            //ファイルオープンの際のイベント
+            document.getElementById("selectfile").addEventListener("change", function(evt) {
+
+                var file = evt.target.files[0];     // ファイル情報
+                var ext = file['name'].slice(-4).toUpperCase();   // 拡張子
+                var reader = new FileReader();
+                var retSvgStr = "";
+
+                if (ext == '.SVG') {
+                    // SVGの読み込み
+                    reader.onload = function(e) {
+                        var svgString = e.target.result;
+                        var colorArray = [];
+                        retSvgStr = svgToSvg(svgString, colorArray);
+
+                        // 色の重複を削除
+                        colorArray = colorArray.filter(function (x, i, self) {
+                                        return self.indexOf(x) === i;
+                                    });
+
+                        // fabric.jsに表示
+                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
+                            var obj = fabric.util.groupSVGElements(objects, options);
+                            canvas.add(obj).renderAll();
+                        });
+
+                        // ファイルに保存
+                        //saveFile(retSvgStr, 'svg.svg');
+                    };
+                    reader.readAsText(file);
+                }
+                else if (ext == '.DXF') {
+                    // DXFの読み込み
+                    reader.onload = function(e) {
+                        var dxfString = e.target.result;
+                        retSvgStr = dxfToSvg(dxfString);
+
+                        // fabric.jsに表示
+                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
+                            var obj = fabric.util.groupSVGElements(objects, options);
+                            canvas.add(obj).renderAll();
+                        });
+
+                        // ファイルに保存
+                        //saveFile(retSvgStr, 'dxf.svg');
+                    };
+                    reader.readAsText(file);
+                }
+                else if (ext == '.PSD') {
+                    // PSDの読み込み
+                    reader.onload = function(e) {
+                        var psd;
+                        psd = new PSD(new Uint8Array(e.target.result));
+                        psd.parse();
+
+                        var img = psd.image.toPng();
+                        retSvgStr = imgToSvg(img);
+
+                        // fabric.jsに表示
+                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
+                            var obj = fabric.util.groupSVGElements(objects, options);
+                            canvas.add(obj).renderAll();
+                        });
+
+                        // ファイルに保存
+                        //saveFile(retSvgStr, 'psd.svg');
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+                else if (ext == '.JPG' || ext == '.BMP' || ext == '.PNG' ||
+                         ext == '.TIF' || ext == '.GIF') {
+
+                    //ファイルの読込が終了した時の処理
+                    reader.onload = function(e) {
+                        var img = new Image();
+
+                        img.onload = function(){
+                            retSvgStr = imgToSvg(img);
+
+                            // fabric.jsに表示
+                            fabric.loadSVGFromString(retSvgStr, function(objects, options) {
+                                var obj = fabric.util.groupSVGElements(objects, options);
+                                canvas.add(obj).renderAll();
+                            });
+
+                            // ファイルに保存
+                            //saveFile(retSvgStr, 'image.svg');
+                        }
+
+                        img.src = e.target.result;
+
+                    }
+                    reader.readAsDataURL(file);     // dataURL形式でファイルを読み込む
+                }
+
+            }, false);
+        });
+
+        function saveFile(svgString, fileName){
+            var blob = new Blob([ svgString ], { "type" : "text/plain" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.target = '_blank';
+            a.download = fileName;
+            a.click();
+        }
+        function saveSvg(){
+            var svgString = canvas.toSVG();
+
+            var blob = new Blob([ svgString ], { "type" : "text/plain" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.target = '_blank';
+            a.download = 'canvas.svg';
+            a.click();
+        }
+
+    </script>
+</head>
+<body>
+    <h1>FILE→SVG</h1>
+    <input type="file" id="selectfile"><input type="button" value="ファイルに保存" onClick="saveSvg()">
+    <canvas id="canvas" width="1200" height="800" style="border:1px solid;"></canvas>
+    <script type="text/javascript">
+        var canvas = new fabric.Canvas('canvas');
+        var PSD = require('psd');
+    </script>
+</body>
+</html>
