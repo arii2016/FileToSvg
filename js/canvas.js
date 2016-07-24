@@ -19,6 +19,11 @@ function Canvas(strCanvas)
         });
     };
 
+    // SVG文字列を取得
+    this.getCanvasSVG = function() {
+        return fabCanvas.toSVG();
+    };
+
     // 選択されているオブジェクトを削除
 
 
@@ -26,6 +31,8 @@ function Canvas(strCanvas)
 
 
     // canvasのサイズを変更
+
+
 
 
 //    this.method1 = function (_param) {
