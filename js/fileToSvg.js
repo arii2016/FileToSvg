@@ -3,7 +3,7 @@
 // SVGをSVGに変換
 function svgToSvg(svgString, colorArray)
 {
-    function copyObj(strObj, obj, objColor, snap, color)
+    var copyObj = function(strObj, obj, objColor, snap, color)
     {
         var segs;
         var d;
@@ -128,7 +128,7 @@ function svgToSvg(svgString, colorArray)
             d = "M" + obj.attr("points");
             snap.path(d).attr({fill:"none", strokeWidth:strokeWidth, stroke:stroke}).transform(matrix);
         }
-    }
+    };
 
     var retSvgStr = "";
     var snapSrc = Snap().remove();
@@ -212,7 +212,7 @@ function dxfToSvg(dxfString)
         String.prototype.format = function() {
 
             // Improved upon http://stackoverflow.com/a/1685917/1449117
-            function toFixed(x) {
+            var toFixed = function(x) {
                 if (Math.abs(x) < 1.0) {
                     var e = parseInt(x.toString().split('e-')[1]);
                     if (e) {
@@ -230,7 +230,7 @@ function dxfToSvg(dxfString)
                     }
                 }
                 return x;
-            }
+            };
 
             // Borrowed from http://stackoverflow.com/a/4673436/1449117
             var args = arguments;
@@ -249,20 +249,20 @@ function dxfToSvg(dxfString)
                     return match;
                 }
             });
-        }
+        };
     }
 
-    function dxfObjectToSvgSnippet(dxfObject)
+    var dxfObjectToSvgSnippet = function(dxfObject)
     {
-        function getLineSvg(x1, y1, x2, y2)
+        var getLineSvg = function(x1, y1, x2, y2)
         {
             return '<path d="M{0},{1} {2},{3}" {4} {5}/>\n'.format(x1, y1, x2, y2, strTransform, strStyle);
-        }
+        };
 
-        function deg2rad(deg)
+        var deg2rad = function(deg)
         {
             return deg * (Math.PI/180);
-        }
+        };
 
         switch (dxfObject.type) {
             case 'LINE':
@@ -296,7 +296,7 @@ function dxfToSvg(dxfString)
                 }
                 return svgSnippet;
         }
-    }
+    };
 
     var groupCodes = {
         0: 'entityType',

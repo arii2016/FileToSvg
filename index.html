@@ -6,11 +6,15 @@
     <script type="text/javascript" src="./js/psd.min.js"></script>
     <script type="text/javascript" src="./js/snap.svg-min.js"></script>
     <script type="text/javascript" src="./js/fabric.min.js"></script>
-    <script type="text/javascript" src="./js/fileToSvg.js"></script>
+    <script type="text/javascript" src="./js/filetosvg.js"></script>
+    <script type="text/javascript" src="./js/canvas.js"></script>
 
     <script type="text/javascript">
 
         window.addEventListener("DOMContentLoaded", function(){
+
+            var canvas = new Canvas('canvas');
+            var PSD = require('psd');
 
             //ファイルオープンの際のイベント
             document.getElementById("selectfile").addEventListener("change", function(evt) {
@@ -32,11 +36,8 @@
                                         return self.indexOf(x) === i;
                                     });
 
-                        // fabric.jsに表示
-                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
-                            var obj = fabric.util.groupSVGElements(objects, options);
-                            canvas.add(obj).renderAll();
-                        });
+                        // canvasに表示
+                        canvas.addObj(retSvgStr);
 
                         // ファイルに保存
                         //saveFile(retSvgStr, 'svg.svg');
@@ -49,11 +50,8 @@
                         var dxfString = e.target.result;
                         retSvgStr = dxfToSvg(dxfString);
 
-                        // fabric.jsに表示
-                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
-                            var obj = fabric.util.groupSVGElements(objects, options);
-                            canvas.add(obj).renderAll();
-                        });
+                        // canvasに表示
+                        canvas.addObj(retSvgStr);
 
                         // ファイルに保存
                         //saveFile(retSvgStr, 'dxf.svg');
@@ -70,11 +68,8 @@
                         var img = psd.image.toPng();
                         retSvgStr = imgToSvg(img);
 
-                        // fabric.jsに表示
-                        fabric.loadSVGFromString(retSvgStr, function(objects, options) {
-                            var obj = fabric.util.groupSVGElements(objects, options);
-                            canvas.add(obj).renderAll();
-                        });
+                        // canvasに表示
+                        canvas.addObj(retSvgStr);
 
                         // ファイルに保存
                         //saveFile(retSvgStr, 'psd.svg');
@@ -91,11 +86,8 @@
                         img.onload = function(){
                             retSvgStr = imgToSvg(img);
 
-                            // fabric.jsに表示
-                            fabric.loadSVGFromString(retSvgStr, function(objects, options) {
-                                var obj = fabric.util.groupSVGElements(objects, options);
-                                canvas.add(obj).renderAll();
-                            });
+                            // canvasに表示
+                            canvas.addObj(retSvgStr);
 
                             // ファイルに保存
                             //saveFile(retSvgStr, 'image.svg');
@@ -120,25 +112,24 @@
         }
         function saveSvg(){
             var svgString = canvas.toSVG();
-
-            var blob = new Blob([ svgString ], { "type" : "text/plain" });
-            var a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.target = '_blank';
-            a.download = 'canvas.svg';
-            a.click();
+            saveFile(svgString, 'canvas.svg');
         }
 
     </script>
 </head>
 <body>
     <h1>FILE→SVG</h1>
-    <input type="file" id="selectfile">
-    <input type="button" value="ファイルに保存" onClick="saveSvg()">
-    <canvas id="canvas" width="1200" height="800" style="border:1px solid;"></canvas>
-    <script type="text/javascript">
-        var canvas = new fabric.Canvas('canvas');
-        var PSD = require('psd');
-    </script>
+    <div>
+        <input type="file" id="selectfile">
+        <input type="button" value="ファイルに保存" onClick="saveSvg()">
+    </div>
+    <div style="margin-top:10px; margin-bottom:10px;">
+        <input type="button" value="Undo" onClick="canvas.undo()">
+        <input type="button" value="Redo" onClick="canvas.redo()">
+        <input type="button" value="Copy" onClick="canvas.copy()">
+        <input type="button" value="Paste" onClick="canvas.paste()">
+        <input type="button" value="Delete" onClick="canvas.delete()">
+    </div>
+    <canvas id="canvas" width="1000" height="800" style="border:1px solid;"></canvas>
 </body>
 </html>
