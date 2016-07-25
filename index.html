@@ -44,8 +44,7 @@
         <input type="button" value="ファイルに保存" onClick="saveSvg()">
     </div>
     <div style="margin-top:5px; margin-bottom:5px;">
-        <input type="button" value="Undo" onClick="canvas.undo()">
-        <input type="button" value="Redo" onClick="canvas.redo()">
+        <input type="button" id="undo" value="Undo" onClick="canvas.undo()">
         <input type="button" value="Copy" onClick="canvas.copyObj()">
         <input type="button" value="Paste" onClick="canvas.pasteObj()">
         <input type="button" value="Delete" onClick="canvas.deleteOneObj()">
@@ -57,10 +56,10 @@
         <input type="button" value="Load" onClick="canvas.load()">
         <input type="button" value="Save" onClick="canvas.save()">
     </div>
-    <canvas id="canvas" width="1000" height="800" style="border:1px solid;"></canvas>
+    <canvas id="canvas"style="border:1px solid;"></canvas>
     <script type="text/javascript">
         var fileToSvg = new FileToSvg();
-        var canvas = new Canvas('canvas');
+        var canvas = new Canvas('canvas', 1200, 800);
     </script>
 </body>
 </html>
