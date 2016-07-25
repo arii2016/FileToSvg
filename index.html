@@ -13,18 +13,20 @@
 
         window.addEventListener("DOMContentLoaded", function(){
 
-
             //ファイルオープンの際のイベント
             document.getElementById("selectfile").addEventListener("change", function(evt) {
 
                 // ファイルをSVGに変換しCanvasクラスにセットする
                 fileToSvg.LoadToSvg(evt.target.files[0], canvas.addObj);
 
+                // 選択されたファイルをクリア
+                $('input[type=file]').val('');
             }, false);
         });
 
+        // canvasをSVGに保存する
         function saveSvg(){
-            var svgString = canvas.getCanvasSVG();
+            var svgString = canvas.getSvg();
 
             var blob = new Blob([ svgString ], { "type" : "text/plain" });
             var a = document.createElement("a");
@@ -33,7 +35,6 @@
             a.download = 'canvas.svg';
             a.click();
         }
-
     </script>
 </head>
 <body>
@@ -42,12 +43,19 @@
         <input type="file" id="selectfile">
         <input type="button" value="ファイルに保存" onClick="saveSvg()">
     </div>
-    <div style="margin-top:10px; margin-bottom:10px;">
+    <div style="margin-top:5px; margin-bottom:5px;">
         <input type="button" value="Undo" onClick="canvas.undo()">
         <input type="button" value="Redo" onClick="canvas.redo()">
-        <input type="button" value="Copy" onClick="canvas.copy()">
-        <input type="button" value="Paste" onClick="canvas.paste()">
-        <input type="button" value="Delete" onClick="canvas.delete()">
+        <input type="button" value="Copy" onClick="canvas.copyObj()">
+        <input type="button" value="Paste" onClick="canvas.pasteObj()">
+        <input type="button" value="Delete" onClick="canvas.deleteOneObj()">
+        <input type="button" value="AllDelete" onClick="canvas.deleteAllObj()">
+    </div>
+    <div style="margin-top:5px; margin-bottom:5px;">
+        <input type="button" value="ZoomIn" onClick="canvas.zoomIn()">
+        <input type="button" value="ZoomOut" onClick="canvas.zoomOut()">
+        <input type="button" value="Load" onClick="canvas.load()">
+        <input type="button" value="Save" onClick="canvas.save()">
     </div>
     <canvas id="canvas" width="1000" height="800" style="border:1px solid;"></canvas>
     <script type="text/javascript">
