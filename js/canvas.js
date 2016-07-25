@@ -18,10 +18,20 @@ function Canvas(strCanvas, width, height)
 
     // コピー・ペースト
     var copyObjs = [];      // コピーするオブジェクト
+    var COPY_PASTE_OFFSET = 10;
 
     // undo・redo
     var stateArr = [fabCanvas.toJSON()];      // 変更ステータス保存配列
     var evnDiseble = false;
+    var STATE_BUFFER_NUM = 5;
+
+    // zoomIn・ZoomOut
+    var canvasScale = 1;
+    var originCanvasWidth = width;
+    var originCanvasHeight = height;
+    var SCALE_FACTOR = 1.5;
+    var MAX_SCALE = 3;
+    var MIN_SCALE = 0.25;
 
     // -------------------------------------------------------------
     // オブジェクトを追加
@@ -29,6 +39,10 @@ function Canvas(strCanvas, width, height)
 
         fabric.loadSVGFromString(svgString, function(objects, options) {
             var obj = fabric.util.groupSVGElements(objects, options);
+
+            // 元の位置を保存しておく
+            obj.originTop = obj.top;
+            obj.originLeft = obj.left;
 
             // JSON出力の追加項目を設定する
             obj.toObject = (function(toObject) {
@@ -38,6 +52,8 @@ function Canvas(strCanvas, width, height)
                         lockRotation: this.lockRotation,
                         lockScalingFlip: this.lockScalingFlip,
                         lockUniScaling: this.lockUniScaling,
+                        originTop: this.originTop,
+                        originLeft: this.originLeft,
                     });
                 };
             })(obj.toObject);
@@ -52,7 +68,8 @@ function Canvas(strCanvas, width, height)
                 // 比率をかけて拡大・縮小できないようにする
                 obj.lockUniScaling = true;
             }
-
+            // リサイズ
+            resizeObj(obj);
             // 追加
             fabCanvas.add(obj).renderAll();
         });
@@ -63,6 +80,10 @@ function Canvas(strCanvas, width, height)
             evnDiseble = true;
             fabCanvas.clear().renderAll();
             fabCanvas.loadFromJSON(stateArr[stateArr.length - 2], function() {
+                var objects = fabCanvas.getObjects();
+                for (var i in objects) {
+                    resizeObj(objects[i]);
+                }
                 fabCanvas.renderAll();
                 evnDiseble = false;
             });
@@ -75,7 +96,7 @@ function Canvas(strCanvas, width, height)
         if (evnDiseble) {
             return;
         }
-        if (stateArr.length > 4) {
+        if (stateArr.length >= STATE_BUFFER_NUM) {
             stateArr.shift();
         }
         stateArr.push(fabCanvas.toJSON());
@@ -88,6 +109,26 @@ function Canvas(strCanvas, width, height)
     // -------------------------------------------------------------
     // オブジェクト移動後イベント
     fabCanvas.on('object:modified', function(options) {
+        // 一つだけ選択されていた場合に取得可能(null)
+        var obj = fabCanvas.getActiveObject();
+        // 複数選択されていた場合に取得可能(null)
+        var group = fabCanvas.getActiveGroup();
+
+        if (obj != null) {
+            obj.originTop = obj.top / canvasScale;
+            obj.originLeft = obj.left / canvasScale;
+
+        }
+        if (group != null) {
+            var groupObj = group.getObjects();
+            var groupTop = (group.top + (group.height / 2));
+            var groupLeft = (group.left + (group.width / 2));
+            for (var i = 0; i < groupObj.length; i++) {
+                groupObj[i].originTop = (groupTop + groupObj[i].top) / canvasScale;
+                groupObj[i].originLeft = (groupLeft + groupObj[i].left) / canvasScale;
+            }
+        }
+
         updateState();
     });
     // -------------------------------------------------------------
@@ -116,8 +157,8 @@ function Canvas(strCanvas, width, height)
             var groupLeft = (group.left + (group.width / 2));
             for (var i = 0; i < groupObj.length; i++) {
                 var cloneObj = fabric.util.object.clone(groupObj[i]);
-                cloneObj.set("top", groupTop + cloneObj.top);
-                cloneObj.set("left", groupLeft + cloneObj.left);
+                cloneObj.originTop = (groupTop + cloneObj.top) / canvasScale;
+                cloneObj.originLeft = (groupLeft + cloneObj.left) / canvasScale;
                 copyObjs.push(cloneObj);
             }
         }
@@ -126,8 +167,10 @@ function Canvas(strCanvas, width, height)
     // 貼り付け
     this.pasteObj = function() {
         for (var i = 0; i < copyObjs.length; i++) {
-            copyObjs[i].set("top", copyObjs[i].top + 10);
-            copyObjs[i].set("left", copyObjs[i].left + 10);
+            copyObjs[i].originTop = (copyObjs[i].originTop + COPY_PASTE_OFFSET);
+            copyObjs[i].originLeft = (copyObjs[i].originLeft + COPY_PASTE_OFFSET);
+            // リサイズ
+            resizeObj(copyObjs[i]);
             var cloneObj = fabric.util.object.clone(copyObjs[i]);
             fabCanvas.add(cloneObj);
         }
@@ -166,35 +209,70 @@ function Canvas(strCanvas, width, height)
         return fabCanvas.toSVG();
     };
     // -------------------------------------------------------------
+    // オブジェクトのサイズを変更する
+    var resizeObj = function(obj) {
+        obj.scaleX = canvasScale;
+        obj.scaleY = canvasScale;
+        obj.top = obj.originTop * canvasScale;
+        obj.left = obj.originLeft * canvasScale;
+        obj.setCoords();
+    };
+    // -------------------------------------------------------------
+    // canvasのサイズを変更する
+    var resizeCanvas = function() {
+        fabCanvas.discardActiveObject();
+        fabCanvas.discardActiveGroup();
+
+        fabCanvas.setWidth(originCanvasWidth * canvasScale);
+        fabCanvas.setHeight(originCanvasHeight * canvasScale);
+
+        var objects = fabCanvas.getObjects();
+        for (var i in objects) {
+            resizeObj(objects[i]);
+        }
+
+        fabCanvas.renderAll();
+    };
+    // -------------------------------------------------------------
     // canvas拡大
-    this.zoomIn = function(width, height) {
+    this.zoomIn = function() {
+
+        canvasScale = canvasScale * SCALE_FACTOR;
+
+        resizeCanvas();
     };
     // -------------------------------------------------------------
     // canvas縮小
-    this.zoomOut = function(width, height) {
+    this.zoomOut = function() {
+        canvasScale = canvasScale / SCALE_FACTOR;
+
+        resizeCanvas();
+    };
+    // -------------------------------------------------------------
+    // リセット
+    this.resetZoom = function() {
+        canvasScale = 1;
+
+        resizeCanvas();
     };
     // -------------------------------------------------------------
     // 設定を保存
     this.save = function() {
-        return fabCanvas.toJSON();
+        return JSON.stringify(fabCanvas);
     };
     // -------------------------------------------------------------
     // 設定を読み込み
     this.load = function(jsonString) {
-        fabCanvas.loadFromJSON(jsonString, function(objects, options) {
+        fabCanvas.clear().renderAll();
+        fabCanvas.loadFromJSON(jsonString, function() {
+            var objects = fabCanvas.getObjects();
+            for (var i in objects) {
+                resizeObj(objects[i]);
+            }
             fabCanvas.renderAll();
         });
     };
     // -------------------------------------------------------------
-
-
-
-
-// canvas上のすべてのオブジェクトを取得
-//var allObj = fabCanvas.getObjects(); 
-
-
-
 
 }
 // -------------------------------------------------------------
