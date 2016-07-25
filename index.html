@@ -22,6 +22,23 @@
                 // 選択されたファイルをクリア
                 $('input[type=file]').val('');
             }, false);
+
+            document.getElementById("selectJsonfile").addEventListener("change", function(evt) {
+                var reader = new FileReader();
+                var file = evt.target.files[0];
+                var ext = file['name'].slice(-5).toUpperCase();   // 拡張子
+
+                if (ext == '.JSON') {
+                    reader.onload = function(e) {
+                        var jsonString = e.target.result;
+                        canvas.load(jsonString);
+                    };
+                    reader.readAsText(file);
+                }
+
+                // 選択されたファイルをクリア
+                $('input[type=file]').val('');
+            }, false);
         });
 
         // canvasをSVGに保存する
@@ -33,6 +50,17 @@
             a.href = URL.createObjectURL(blob);
             a.target = '_blank';
             a.download = 'canvas.svg';
+            a.click();
+        }
+        // canvasをJSONに保存する
+        function saveJson(){
+            var jsonString = canvas.save();
+
+            var blob = new Blob([ jsonString ], { "type" : "text/plain" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.target = '_blank';
+            a.download = 'canvas.json';
             a.click();
         }
     </script>
@@ -53,8 +81,11 @@
     <div style="margin-top:5px; margin-bottom:5px;">
         <input type="button" value="ZoomIn" onClick="canvas.zoomIn()">
         <input type="button" value="ZoomOut" onClick="canvas.zoomOut()">
-        <input type="button" value="Load" onClick="canvas.load()">
-        <input type="button" value="Save" onClick="canvas.save()">
+        <input type="button" value="ResetZoom" onClick="canvas.resetZoom()">
+    </div>
+    <div style="margin-top:5px; margin-bottom:5px;">
+        <input type="file" value="Load" id="selectJsonfile" >
+        <input type="button" value="Save" onClick="saveJson()">
     </div>
     <canvas id="canvas"style="border:1px solid;"></canvas>
     <script type="text/javascript">
