@@ -21,7 +21,7 @@ function FileToSvg()
                 colorArray = colorArray.filter(function (x, i, self) {
                                 return self.indexOf(x) === i;
                             });
-                canvasFunc(strRet, FILE_TYPE.SVG);
+                canvasFunc(strRet, FILE_TYPE.SVG, 90, colorArray);
             };
             reader.readAsText(file);
         }
@@ -31,7 +31,7 @@ function FileToSvg()
                 var dxfString = e.target.result;
                 var strRet = dxfToSvg(dxfString);
 
-                canvasFunc(strRet, FILE_TYPE.DXF);
+                canvasFunc(strRet, FILE_TYPE.DXF, 90);
             };
             reader.readAsText(file);
         }
@@ -45,7 +45,7 @@ function FileToSvg()
                 var img = psd.image.toPng();
                 var strRet = imgToSvg(img);
 
-                canvasFunc(strRet, FILE_TYPE.IMG);
+                canvasFunc(strRet, FILE_TYPE.IMG, 90);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -59,7 +59,7 @@ function FileToSvg()
                 img.onload = function(){
                     var strRet = imgToSvg(img);
 
-                    canvasFunc(strRet, FILE_TYPE.IMG);
+                    canvasFunc(strRet, FILE_TYPE.IMG, 90);
                 }
 
                 img.src = e.target.result;

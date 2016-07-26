@@ -8,39 +8,53 @@ var FILE_TYPE = {
 };
 
 // -------------------------------------------------------------
-function Canvas(strCanvas, width, height)
+function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
 {
+    var originCanvasScale = canvasWidth / warkAreaWidth;
+    var canvasScale = originCanvasScale;
+    var _warkAreaWidth = warkAreaWidth;
+    var _warkAreaHeight = warkAreaHeight;
+
     var fabCanvas = new fabric.Canvas(strCanvas, {
-        width: width, 
-        height: height,
+        width: _warkAreaWidth * canvasScale, 
+        height: _warkAreaHeight * canvasScale,
         imageSmoothingEnabled : false,      // 画像を平滑化しない
     });
 
     // コピー・ペースト
     var copyObjs = [];      // コピーするオブジェクト
-    var COPY_PASTE_OFFSET = 10;
+    var COPY_PASTE_OFFSET = 5;
 
     // undo・redo
     var stateArr = [fabCanvas.toJSON()];      // 変更ステータス保存配列
     var evnDiseble = false;
-    var STATE_BUFFER_NUM = 5;
+    var STATE_BUFFER_NUM = 4;
 
     // zoomIn・ZoomOut
-    var canvasScale = 1;
-    var originCanvasWidth = width;
-    var originCanvasHeight = height;
     var SCALE_FACTOR = 1.5;
-    var MAX_SCALE = 3;
-    var MIN_SCALE = 0.25;
+    var MAX_SCALE = 5;
 
     // -------------------------------------------------------------
+    var PX_TO_MM = function(obj) {
+        return 25.4 / obj.dpi;
+    };
+    // -------------------------------------------------------------
     // オブジェクトを追加
-    this.addObj = function(svgString, fileType) {
+    this.addObj = function(svgString, fileType, dpi, colorArr) {
 
         fabric.loadSVGFromString(svgString, function(objects, options) {
             var obj = fabric.util.groupSVGElements(objects, options);
 
-            // 元の位置を保存しておく
+            // ファイルの種類を保存
+            obj.fileType = fileType;
+
+            // DPIを保存
+            obj.dpi = dpi;
+
+            // 色情報を保存
+            obj.colorArr = colorArr;
+
+            // 元の位置を保存
             obj.originTop = obj.top;
             obj.originLeft = obj.left;
 
@@ -52,6 +66,9 @@ function Canvas(strCanvas, width, height)
                         lockRotation: this.lockRotation,
                         lockScalingFlip: this.lockScalingFlip,
                         lockUniScaling: this.lockUniScaling,
+                        fileType: this.fileType,
+                        dpi: this.dpi,
+                        colorArr: this.colorArr,
                         originTop: this.originTop,
                         originLeft: this.originLeft,
                     });
@@ -115,8 +132,8 @@ function Canvas(strCanvas, width, height)
         var group = fabCanvas.getActiveGroup();
 
         if (obj != null) {
-            obj.originTop = obj.top / canvasScale;
-            obj.originLeft = obj.left / canvasScale;
+            obj.originTop = obj.top / PX_TO_MM(obj) / canvasScale;
+            obj.originLeft = obj.left / PX_TO_MM(obj) / canvasScale;
 
         }
         if (group != null) {
@@ -124,8 +141,8 @@ function Canvas(strCanvas, width, height)
             var groupTop = (group.top + (group.height / 2));
             var groupLeft = (group.left + (group.width / 2));
             for (var i = 0; i < groupObj.length; i++) {
-                groupObj[i].originTop = (groupTop + groupObj[i].top) / canvasScale;
-                groupObj[i].originLeft = (groupLeft + groupObj[i].left) / canvasScale;
+                groupObj[i].originTop = (groupTop + groupObj[i].top) / PX_TO_MM(groupObj[i]) / canvasScale;
+                groupObj[i].originLeft = (groupLeft + groupObj[i].left) / PX_TO_MM(groupObj[i]) / canvasScale;
             }
         }
 
@@ -157,8 +174,8 @@ function Canvas(strCanvas, width, height)
             var groupLeft = (group.left + (group.width / 2));
             for (var i = 0; i < groupObj.length; i++) {
                 var cloneObj = fabric.util.object.clone(groupObj[i]);
-                cloneObj.originTop = (groupTop + cloneObj.top) / canvasScale;
-                cloneObj.originLeft = (groupLeft + cloneObj.left) / canvasScale;
+                cloneObj.originTop = (groupTop + cloneObj.top) / PX_TO_MM(cloneObj) / canvasScale;
+                cloneObj.originLeft = (groupLeft + cloneObj.left) / PX_TO_MM(cloneObj) / canvasScale;
                 copyObjs.push(cloneObj);
             }
         }
@@ -206,15 +223,16 @@ function Canvas(strCanvas, width, height)
     // -------------------------------------------------------------
     // canvasの内容をSVG文字列に出力
     this.getSvg = function() {
+
         return fabCanvas.toSVG();
     };
     // -------------------------------------------------------------
     // オブジェクトのサイズを変更する
     var resizeObj = function(obj) {
-        obj.scaleX = canvasScale;
-        obj.scaleY = canvasScale;
-        obj.top = obj.originTop * canvasScale;
-        obj.left = obj.originLeft * canvasScale;
+        obj.scaleX = PX_TO_MM(obj) * canvasScale;
+        obj.scaleY = PX_TO_MM(obj) * canvasScale;
+        obj.top = obj.originTop * PX_TO_MM(obj) * canvasScale;
+        obj.left = obj.originLeft * PX_TO_MM(obj) * canvasScale;
         obj.setCoords();
     };
     // -------------------------------------------------------------
@@ -223,9 +241,10 @@ function Canvas(strCanvas, width, height)
         fabCanvas.discardActiveObject();
         fabCanvas.discardActiveGroup();
 
-        fabCanvas.setWidth(originCanvasWidth * canvasScale);
-        fabCanvas.setHeight(originCanvasHeight * canvasScale);
+        fabCanvas.setWidth(_warkAreaWidth * canvasScale);
+        fabCanvas.setHeight(_warkAreaHeight * canvasScale);
 
+        // すべてのオブジェクトのサイズを変更する
         var objects = fabCanvas.getObjects();
         for (var i in objects) {
             resizeObj(objects[i]);
@@ -236,6 +255,9 @@ function Canvas(strCanvas, width, height)
     // -------------------------------------------------------------
     // canvas拡大
     this.zoomIn = function() {
+        if (canvasScale * SCALE_FACTOR >  MAX_SCALE) {
+            return;
+        }
 
         canvasScale = canvasScale * SCALE_FACTOR;
 
@@ -244,6 +266,9 @@ function Canvas(strCanvas, width, height)
     // -------------------------------------------------------------
     // canvas縮小
     this.zoomOut = function() {
+        if (canvasScale / SCALE_FACTOR < originCanvasScale) {
+            return;
+        }
         canvasScale = canvasScale / SCALE_FACTOR;
 
         resizeCanvas();
@@ -251,7 +276,7 @@ function Canvas(strCanvas, width, height)
     // -------------------------------------------------------------
     // リセット
     this.resetZoom = function() {
-        canvasScale = 1;
+        canvasScale = originCanvasScale;
 
         resizeCanvas();
     };
