@@ -261,6 +261,11 @@ function warkCanvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
         return svgStringArr;
     };
     // -------------------------------------------------------------
+    // 出力SVGのDPI取得
+    this.getSvgDPI = function() {
+        return OUT_PUT_DPI;
+    };
+    // -------------------------------------------------------------
     // オブジェクトのサイズを変更する
     var resizeObj = function(obj) {
         obj.scaleX = obj.originScaleX * PX_TO_MM(obj.dpi) * canvasScale;

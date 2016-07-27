@@ -16,12 +16,14 @@ function FileToSvg()
                 var svgString = e.target.result;
                 var colorArray = [];
                 var strRet = svgToSvg(svgString, colorArray);
+                var dpi = getSvgDpi(svgString);
 
                 // 色の重複を削除
                 colorArray = colorArray.filter(function (x, i, self) {
                                 return self.indexOf(x) === i;
                             });
-                canvasFunc(strRet, FILE_TYPE.SVG, 90, colorArray);
+
+                canvasFunc(strRet, FILE_TYPE.SVG, dpi, colorArray);
             };
             reader.readAsText(file);
         }
@@ -273,6 +275,30 @@ function FileToSvg()
         snapDst.remove();
 
         return retSvgStr;
+    };
+    // -------------------------------------------------------------
+    // SVGのDPIを取得
+    var getSvgDpi = function(svgString) {
+        var dpi = 90;
+
+        var svghead = svgString.slice(0,400);
+        if (svghead.search(/Inkscape/i) != -1) {
+            dpi = 90;
+        }
+        else if (svghead.search(/Illustrator/i) != -1) {
+            dpi = 72;
+        }
+        else if (svghead.search(/Intaglio/i) != -1) {
+            dpi = 72;
+        }
+        else if (svghead.search(/CorelDraw/i) != -1) {
+            dpi = 96;
+        }
+        else if (svghead.search(/Qt/i) != -1) {
+            dpi = 90;
+        }
+
+        return dpi;
     };
     // -------------------------------------------------------------
     // DXFをSVGに変換
