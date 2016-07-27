@@ -10,10 +10,11 @@ var FILE_TYPE = {
 // -------------------------------------------------------------
 function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
 {
-    var originCanvasScale = canvasWidth / warkAreaWidth;
-    var canvasScale = originCanvasScale;
+    var _canvasWidth = canvasWidth;
     var _warkAreaWidth = warkAreaWidth;
     var _warkAreaHeight = warkAreaHeight;
+    var originCanvasScale = _canvasWidth / _warkAreaWidth;
+    var canvasScale = originCanvasScale;
 
     var fabCanvas = new fabric.Canvas(strCanvas, {
         width: _warkAreaWidth * canvasScale, 
@@ -25,7 +26,8 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
     var PX_TO_MM = function(dpi) {
         return 25.4 / dpi;
     };
-    var OUT_PUT_DPI = 90;   // 出力DPI
+    var OUT_PUT_DPI = 90;   // SYG出力DPI
+    // SVG出力用
     var fabDummyCanvas = new fabric.Canvas("", {
         width: _warkAreaWidth / PX_TO_MM(OUT_PUT_DPI), 
         height: _warkAreaHeight / PX_TO_MM(OUT_PUT_DPI), 
@@ -315,18 +317,21 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
     // -------------------------------------------------------------
     // 設定を保存
     this.save = function() {
-        return JSON.stringify(fabCanvas);
+        return JSON.stringify({"warkAreaWidth":_warkAreaWidth, "warkAreaHeight": _warkAreaHeight, "fabCanvas":fabCanvas });
     };
     // -------------------------------------------------------------
     // 設定を読み込み
     this.load = function(jsonString) {
+        var jsonObj = JSON.parse(jsonString);
         fabCanvas.clear().renderAll();
-        fabCanvas.loadFromJSON(jsonString, function() {
-            var objects = fabCanvas.getObjects();
-            for (var i in objects) {
-                resizeObj(objects[i]);
-            }
-            fabCanvas.renderAll();
+
+        _warkAreaWidth = jsonObj.warkAreaWidth;
+        _warkAreaHeight = jsonObj.warkAreaHeight;
+        originCanvasScale = _canvasWidth / _warkAreaWidth;
+        canvasScale = originCanvasScale;
+
+        fabCanvas.loadFromJSON(jsonObj.fabCanvas, function() {
+            resizeCanvas();
         });
     };
     // -------------------------------------------------------------
