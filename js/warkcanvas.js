@@ -8,7 +8,7 @@ var FILE_TYPE = {
 };
 
 // -------------------------------------------------------------
-function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
+function warkCanvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
 {
     var _canvasWidth = canvasWidth;
     var _warkAreaWidth = warkAreaWidth;
