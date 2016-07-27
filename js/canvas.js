@@ -21,6 +21,17 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
         imageSmoothingEnabled : false,      // 画像を平滑化しない
     });
 
+    // ピクセルをmmに変換
+    var PX_TO_MM = function(dpi) {
+        return 25.4 / dpi;
+    };
+    var OUT_PUT_DPI = 90;   // 出力DPI
+    var fabDummyCanvas = new fabric.Canvas("", {
+        width: _warkAreaWidth / PX_TO_MM(OUT_PUT_DPI), 
+        height: _warkAreaHeight / PX_TO_MM(OUT_PUT_DPI), 
+        imageSmoothingEnabled : false,      // 画像を平滑化しない
+    });
+
     // コピー・ペースト
     var copyObjs = [];      // コピーするオブジェクト
     var COPY_PASTE_OFFSET = 5;
@@ -34,10 +45,6 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
     var SCALE_FACTOR = 1.5;
     var MAX_SCALE = 5;
 
-    // -------------------------------------------------------------
-    var PX_TO_MM = function(obj) {
-        return 25.4 / obj.dpi;
-    };
     // -------------------------------------------------------------
     // オブジェクトを追加
     this.addObj = function(svgString, fileType, dpi, colorArr) {
@@ -54,9 +61,11 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
             // 色情報を保存
             obj.colorArr = colorArr;
 
-            // 元の位置を保存
+            // 元の位置・スケールを保存
             obj.originTop = obj.top;
             obj.originLeft = obj.left;
+            obj.originScaleX = obj.scaleX;
+            obj.originScaleY = obj.scaleY;
 
             // JSON出力の追加項目を設定する
             obj.toObject = (function(toObject) {
@@ -71,6 +80,8 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
                         colorArr: this.colorArr,
                         originTop: this.originTop,
                         originLeft: this.originLeft,
+                        originScaleX: this.originScaleX,
+                        originScaleY: this.originScaleY,
                     });
                 };
             })(obj.toObject);
@@ -132,8 +143,10 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
         var group = fabCanvas.getActiveGroup();
 
         if (obj != null) {
-            obj.originTop = obj.top / PX_TO_MM(obj) / canvasScale;
-            obj.originLeft = obj.left / PX_TO_MM(obj) / canvasScale;
+            obj.originTop = obj.top / PX_TO_MM(obj.dpi) / canvasScale;
+            obj.originLeft = obj.left / PX_TO_MM(obj.dpi) / canvasScale;
+            obj.originScaleX = obj.scaleX / PX_TO_MM(obj.dpi) / canvasScale;
+            obj.originScaleY = obj.scaleY / PX_TO_MM(obj.dpi) / canvasScale;
 
         }
         if (group != null) {
@@ -141,8 +154,10 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
             var groupTop = (group.top + (group.height / 2));
             var groupLeft = (group.left + (group.width / 2));
             for (var i = 0; i < groupObj.length; i++) {
-                groupObj[i].originTop = (groupTop + groupObj[i].top) / PX_TO_MM(groupObj[i]) / canvasScale;
-                groupObj[i].originLeft = (groupLeft + groupObj[i].left) / PX_TO_MM(groupObj[i]) / canvasScale;
+                groupObj[i].originTop = (groupTop + groupObj[i].top) / PX_TO_MM(groupObj[i].dpi) / canvasScale;
+                groupObj[i].originLeft = (groupLeft + groupObj[i].left) / PX_TO_MM(groupObj[i].dpi) / canvasScale;
+                groupObj[i].originScaleX = groupObj[i].scaleX / PX_TO_MM(groupObj[i].dpi) / canvasScale;
+                groupObj[i].originScaleY = groupObj[i].scaleY / PX_TO_MM(groupObj[i].dpi) / canvasScale;
             }
         }
 
@@ -174,8 +189,8 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
             var groupLeft = (group.left + (group.width / 2));
             for (var i = 0; i < groupObj.length; i++) {
                 var cloneObj = fabric.util.object.clone(groupObj[i]);
-                cloneObj.originTop = (groupTop + cloneObj.top) / PX_TO_MM(cloneObj) / canvasScale;
-                cloneObj.originLeft = (groupLeft + cloneObj.left) / PX_TO_MM(cloneObj) / canvasScale;
+                cloneObj.originTop = (groupTop + cloneObj.top) / PX_TO_MM(cloneObj.dpi) / canvasScale;
+                cloneObj.originLeft = (groupLeft + cloneObj.left) / PX_TO_MM(cloneObj.dpi) / canvasScale;
                 copyObjs.push(cloneObj);
             }
         }
@@ -223,16 +238,33 @@ function Canvas(strCanvas, warkAreaWidth, warkAreaHeight, canvasWidth)
     // -------------------------------------------------------------
     // canvasの内容をSVG文字列に出力
     this.getSvg = function() {
+        var svgStringArr = [];
 
-        return fabCanvas.toSVG();
+        var objects = fabCanvas.getObjects();
+        for (var i in objects) {
+            var cloneObj = fabric.util.object.clone(objects[i]);
+            var dpiCoeff = OUT_PUT_DPI / cloneObj.dpi;
+
+            cloneObj.scaleX = cloneObj.originScaleX * dpiCoeff;
+            cloneObj.scaleY = cloneObj.originScaleY * dpiCoeff;
+            cloneObj.top = cloneObj.originTop * dpiCoeff;
+            cloneObj.left = cloneObj.originLeft * dpiCoeff;
+            cloneObj.setCoords();
+
+            fabDummyCanvas.clear();
+            fabDummyCanvas.add(cloneObj);
+            svgStringArr.push(fabDummyCanvas.toSVG());
+        }
+
+        return svgStringArr;
     };
     // -------------------------------------------------------------
     // オブジェクトのサイズを変更する
     var resizeObj = function(obj) {
-        obj.scaleX = PX_TO_MM(obj) * canvasScale;
-        obj.scaleY = PX_TO_MM(obj) * canvasScale;
-        obj.top = obj.originTop * PX_TO_MM(obj) * canvasScale;
-        obj.left = obj.originLeft * PX_TO_MM(obj) * canvasScale;
+        obj.scaleX = obj.originScaleX * PX_TO_MM(obj.dpi) * canvasScale;
+        obj.scaleY = obj.originScaleY * PX_TO_MM(obj.dpi) * canvasScale;
+        obj.top = obj.originTop * PX_TO_MM(obj.dpi) * canvasScale;
+        obj.left = obj.originLeft * PX_TO_MM(obj.dpi) * canvasScale;
         obj.setCoords();
     };
     // -------------------------------------------------------------
